@@ -51,10 +51,17 @@ Home Manager module example:
   programs.oh-my-pi = {
     enable = true;
     agents = {
-      "my-agent.md".text = ''
-        # My Agent
-        This is my custom agent definition.
-      '';
+      "my-agent.md" = {
+        name = "my-agent";
+        description = "My custom agent";
+        extraDesc = "Additional behavior details shown with the description.";
+        tools = [ "read" "search" "find" "web_search" ];
+        model = "pi/smol";
+        thinkingLevel = "med";
+        prompt = ''
+          You are my custom agent.
+        '';
+      };
     };
   };
 }
@@ -67,8 +74,21 @@ Available Home Manager options:
 - `programs.oh-my-pi.agents`: Attribute set of markdown agent files installed to `~/.omp/agents/agent/`; each attribute name becomes the destination filename and must end with `.md`.
   - `<name>.source`: Path to a markdown file copied into `~/.omp/agents/agent/<name>`.
   - `<name>.text`: Inline markdown contents written to `~/.omp/agents/agent/<name>`.
+  - Generated markdown mode (set these instead of `source`/`text`):
+    - `<name>.name` (required): Frontmatter `name`.
+    - `<name>.description` (required): Frontmatter `description`.
+    - `<name>.extraDesc`: Extra text appended to `description`.
+    - `<name>.tools`: Frontmatter `tools`.
+    - `<name>.spawns`: Frontmatter `spawns`.
+    - `<name>.model`: Frontmatter `model`.
+    - `<name>.thinkingLevel`: Frontmatter `thinking-level`.
+    - `<name>.blocking`: Frontmatter `blocking`.
+    - `<name>.autoloadSkills`: Frontmatter `autoloadSkills`.
+    - `<name>.readSummarize`: Frontmatter `read-summarize`.
+    - `<name>.output`: Frontmatter `output`.
+    - `<name>.prompt`: Body text written after frontmatter.
   - `<name>.executable`: Marks the installed file as executable (default: `false`).
-  - Exactly one of `<name>.source` or `<name>.text` must be set.
+  - Exactly one mode must be used: `<name>.source`, `<name>.text`, or generated fields.
 
 ## Development
 

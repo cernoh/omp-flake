@@ -103,6 +103,46 @@
         default = { config, lib, pkgs, ... }:
           let
             cfg = config.programs.oh-my-pi;
+            renderAgentField = key: value:
+              lib.optionalString (value != null) "${key}: ${builtins.toJSON value}\n";
+            hasGeneratedAgentConfig = agentCfg:
+              agentCfg.name != null
+              || agentCfg.description != null
+              || agentCfg.extraDesc != null
+              || agentCfg.tools != null
+              || agentCfg.spawns != null
+              || agentCfg.model != null
+              || agentCfg.thinkingLevel != null
+              || agentCfg.blocking != null
+              || agentCfg.autoloadSkills != null
+              || agentCfg.readSummarize != null
+              || agentCfg.output != null
+              || agentCfg.prompt != null;
+            renderGeneratedAgent = agentCfg:
+              let
+                description =
+                  if agentCfg.extraDesc == null || agentCfg.extraDesc == "" then
+                    agentCfg.description
+                  else
+                    "${agentCfg.description}\n\n${agentCfg.extraDesc}";
+              in
+              ''
+                ---
+                name: ${builtins.toJSON agentCfg.name}
+                description: ${builtins.toJSON description}
+                ${renderAgentField "tools" agentCfg.tools}${renderAgentField "spawns" agentCfg.spawns}${renderAgentField "model" agentCfg.model}${renderAgentField "thinking-level" agentCfg.thinkingLevel}${lib.optionalString (agentCfg.blocking == true) "blocking: true\n"}${renderAgentField "autoloadSkills" agentCfg.autoloadSkills}${renderAgentField "read-summarize" agentCfg.readSummarize}${renderAgentField "output" agentCfg.output}---
+                ${lib.optionalString (agentCfg.prompt != null) agentCfg.prompt}
+              '';
+            agentFileConfig = agentCfg:
+              {
+                inherit (agentCfg) executable;
+              } // lib.optionalAttrs (agentCfg.source != null) {
+                source = agentCfg.source;
+              } // lib.optionalAttrs (agentCfg.text != null) {
+                text = agentCfg.text;
+              } // lib.optionalAttrs (hasGeneratedAgentConfig agentCfg && agentCfg.source == null && agentCfg.text == null) {
+                text = renderGeneratedAgent agentCfg;
+              };
           in
           {
             options.programs.oh-my-pi = {
@@ -125,6 +165,66 @@
                       default = null;
                       description = "Inline markdown agent file content to install.";
                     };
+                    name = lib.mkOption {
+                      type = lib.types.nullOr lib.types.str;
+                      default = null;
+                      description = "Generated agent frontmatter `name` field.";
+                    };
+                    description = lib.mkOption {
+                      type = lib.types.nullOr lib.types.lines;
+                      default = null;
+                      description = "Generated agent frontmatter `description` field.";
+                    };
+                    extraDesc = lib.mkOption {
+                      type = lib.types.nullOr lib.types.lines;
+                      default = null;
+                      description = "Additional text appended to `description` in generated frontmatter.";
+                    };
+                    tools = lib.mkOption {
+                      type = lib.types.nullOr (lib.types.either lib.types.str (lib.types.listOf lib.types.str));
+                      default = null;
+                      description = "Generated agent frontmatter `tools` field.";
+                    };
+                    spawns = lib.mkOption {
+                      type = lib.types.nullOr (lib.types.either lib.types.str (lib.types.listOf lib.types.str));
+                      default = null;
+                      description = "Generated agent frontmatter `spawns` field.";
+                    };
+                    model = lib.mkOption {
+                      type = lib.types.nullOr (lib.types.either lib.types.str (lib.types.listOf lib.types.str));
+                      default = null;
+                      description = "Generated agent frontmatter `model` field.";
+                    };
+                    thinkingLevel = lib.mkOption {
+                      type = lib.types.nullOr lib.types.str;
+                      default = null;
+                      description = "Generated agent frontmatter `thinking-level` field.";
+                    };
+                    blocking = lib.mkOption {
+                      type = lib.types.nullOr lib.types.bool;
+                      default = null;
+                      description = "Generated agent frontmatter `blocking` field.";
+                    };
+                    autoloadSkills = lib.mkOption {
+                      type = lib.types.nullOr (lib.types.either lib.types.str (lib.types.listOf lib.types.str));
+                      default = null;
+                      description = "Generated agent frontmatter `autoloadSkills` field.";
+                    };
+                    readSummarize = lib.mkOption {
+                      type = lib.types.nullOr lib.types.bool;
+                      default = null;
+                      description = "Generated agent frontmatter `read-summarize` field.";
+                    };
+                    output = lib.mkOption {
+                      type = lib.types.nullOr lib.types.attrs;
+                      default = null;
+                      description = "Generated agent frontmatter `output` field.";
+                    };
+                    prompt = lib.mkOption {
+                      type = lib.types.nullOr lib.types.lines;
+                      default = null;
+                      description = "Prompt body written after generated frontmatter.";
+                    };
                     executable = lib.mkOption {
                       type = lib.types.bool;
                       default = false;
@@ -141,20 +241,29 @@
               home.packages = [ cfg.package ];
               home.file = lib.mapAttrs'
                 (name: agentCfg:
-                  lib.nameValuePair ".omp/agents/agent/${name}" ({
-                    inherit (agentCfg) executable;
-                  } // lib.optionalAttrs (agentCfg.source != null) {
-                    source = agentCfg.source;
-                  } // lib.optionalAttrs (agentCfg.text != null) {
-                    text = agentCfg.text;
-                  }))
+                  lib.nameValuePair ".omp/agents/agent/${name}" (agentFileConfig agentCfg))
                 cfg.agents;
               assertions = [
                 {
-                  assertion = lib.all
-                    (agentCfg: (agentCfg.source == null) != (agentCfg.text == null))
+                  assertion = lib.all (agentCfg:
+                    let
+                      usesSource = agentCfg.source != null;
+                      usesText = agentCfg.text != null;
+                      usesGenerated = hasGeneratedAgentConfig agentCfg;
+                    in
+                    (if usesGenerated then 1 else 0) + (if usesSource then 1 else 0) + (if usesText then 1 else 0) == 1)
                     (lib.attrValues cfg.agents);
-                  message = "Each programs.oh-my-pi.agents.<name> must set exactly one of `source` or `text`.";
+                  message = "Each programs.oh-my-pi.agents.<name> must set exactly one mode: `source`, `text`, or generated fields.";
+                }
+                {
+                  assertion = lib.all
+                    (agentCfg:
+                      let
+                        usesGenerated = hasGeneratedAgentConfig agentCfg;
+                      in
+                      !usesGenerated || (agentCfg.name != null && agentCfg.description != null))
+                    (lib.attrValues cfg.agents);
+                  message = "Generated agents must set both `name` and `description`.";
                 }
                 {
                   assertion = lib.all (name: lib.hasSuffix ".md" name) (lib.attrNames cfg.agents);
