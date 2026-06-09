@@ -121,16 +121,27 @@
             renderGeneratedAgent = agentCfg:
               let
                 description =
-                  if agentCfg.extraDesc == null || agentCfg.extraDesc == "" then
+                  if agentCfg.extraDesc == null then
                     agentCfg.description
                   else
                     "${agentCfg.description}\n\n${agentCfg.extraDesc}";
+                frontmatter =
+                  [
+                    "name: ${builtins.toJSON agentCfg.name}\n"
+                    "description: ${builtins.toJSON description}\n"
+                  ]
+                  ++ lib.optional (agentCfg.tools != null) (renderAgentField "tools" agentCfg.tools)
+                  ++ lib.optional (agentCfg.spawns != null) (renderAgentField "spawns" agentCfg.spawns)
+                  ++ lib.optional (agentCfg.model != null) (renderAgentField "model" agentCfg.model)
+                  ++ lib.optional (agentCfg.thinkingLevel != null) (renderAgentField "thinking-level" agentCfg.thinkingLevel)
+                  ++ lib.optional (agentCfg.blocking == true) "blocking: true\n"
+                  ++ lib.optional (agentCfg.autoloadSkills != null) (renderAgentField "autoloadSkills" agentCfg.autoloadSkills)
+                  ++ lib.optional (agentCfg.readSummarize != null) (renderAgentField "read-summarize" agentCfg.readSummarize)
+                  ++ lib.optional (agentCfg.output != null) (renderAgentField "output" agentCfg.output);
               in
               ''
                 ---
-                name: ${builtins.toJSON agentCfg.name}
-                description: ${builtins.toJSON description}
-                ${renderAgentField "tools" agentCfg.tools}${renderAgentField "spawns" agentCfg.spawns}${renderAgentField "model" agentCfg.model}${renderAgentField "thinking-level" agentCfg.thinkingLevel}${lib.optionalString (agentCfg.blocking == true) "blocking: true\n"}${renderAgentField "autoloadSkills" agentCfg.autoloadSkills}${renderAgentField "read-summarize" agentCfg.readSummarize}${renderAgentField "output" agentCfg.output}---
+                ${lib.concatStrings frontmatter}---
                 ${lib.optionalString (agentCfg.prompt != null) agentCfg.prompt}
               '';
             agentFileConfig = agentCfg:
@@ -251,7 +262,9 @@
                       usesText = agentCfg.text != null;
                       usesGenerated = hasGeneratedAgentConfig agentCfg;
                     in
-                    (if usesGenerated then 1 else 0) + (if usesSource then 1 else 0) + (if usesText then 1 else 0) == 1)
+                    (usesGenerated && !usesSource && !usesText)
+                    || (!usesGenerated && usesSource && !usesText)
+                    || (!usesGenerated && !usesSource && usesText))
                     (lib.attrValues cfg.agents);
                   message = "Each programs.oh-my-pi.agents.<name> must set exactly one mode: `source`, `text`, or generated fields.";
                 }
