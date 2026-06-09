@@ -77,7 +77,7 @@ Available Home Manager options:
   - Generated markdown mode (set these instead of `source`/`text`):
     - `<name>.name` (required): Frontmatter `name`.
     - `<name>.description` (required): Frontmatter `description`.
-    - `<name>.extraDesc`: Extra text appended to `description`.
+    - `<name>.extraDesc`: Extra text written below the frontmatter `---` line (before `prompt`).
     - `<name>.tools`: Frontmatter `tools`.
     - `<name>.spawns`: Frontmatter `spawns`.
     - `<name>.model`: Frontmatter `model`.

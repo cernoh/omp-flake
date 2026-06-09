@@ -120,15 +120,10 @@
               || agentCfg.prompt != null;
             renderGeneratedAgent = agentCfg:
               let
-                description =
-                  if agentCfg.extraDesc == null then
-                    agentCfg.description
-                  else
-                    "${agentCfg.description}\n\n${agentCfg.extraDesc}";
                 frontmatter =
                   [
                     "name: ${builtins.toJSON agentCfg.name}\n"
-                    "description: ${builtins.toJSON description}\n"
+                    "description: ${builtins.toJSON agentCfg.description}\n"
                   ]
                   ++ lib.optional (agentCfg.tools != null) (renderAgentField "tools" agentCfg.tools)
                   ++ lib.optional (agentCfg.spawns != null) (renderAgentField "spawns" agentCfg.spawns)
@@ -138,11 +133,12 @@
                   ++ lib.optional (agentCfg.autoloadSkills != null) (renderAgentField "autoloadSkills" agentCfg.autoloadSkills)
                   ++ lib.optional (agentCfg.readSummarize != null) (renderAgentField "read-summarize" agentCfg.readSummarize)
                   ++ lib.optional (agentCfg.output != null) (renderAgentField "output" agentCfg.output);
+                bodySections = lib.filter (section: section != null && section != "") [ agentCfg.extraDesc agentCfg.prompt ];
               in
               ''
                 ---
                 ${lib.concatStrings frontmatter}---
-                ${lib.optionalString (agentCfg.prompt != null) agentCfg.prompt}
+                ${lib.optionalString (bodySections != [ ]) "${lib.concatStringsSep "\n\n" bodySections}\n"}
               '';
             agentFileConfig = agentCfg:
               {
