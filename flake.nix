@@ -134,7 +134,7 @@
                   ++ lib.optional (agentCfg.spawns != null) (renderAgentField "spawns" agentCfg.spawns)
                   ++ lib.optional (agentCfg.model != null) (renderAgentField "model" agentCfg.model)
                   ++ lib.optional (agentCfg.thinkingLevel != null) (renderAgentField "thinking-level" agentCfg.thinkingLevel)
-                  ++ lib.optional (agentCfg.blocking == true) "blocking: true\n"
+                  ++ lib.optional (agentCfg.blocking != null) (renderAgentField "blocking" agentCfg.blocking)
                   ++ lib.optional (agentCfg.autoloadSkills != null) (renderAgentField "autoloadSkills" agentCfg.autoloadSkills)
                   ++ lib.optional (agentCfg.readSummarize != null) (renderAgentField "read-summarize" agentCfg.readSummarize)
                   ++ lib.optional (agentCfg.output != null) (renderAgentField "output" agentCfg.output);
@@ -262,9 +262,7 @@
                       usesText = agentCfg.text != null;
                       usesGenerated = hasGeneratedAgentConfig agentCfg;
                     in
-                    (usesGenerated && !usesSource && !usesText)
-                    || (!usesGenerated && usesSource && !usesText)
-                    || (!usesGenerated && !usesSource && usesText))
+                    lib.count (mode: mode) [ usesGenerated usesSource usesText ] == 1)
                     (lib.attrValues cfg.agents);
                   message = "Each programs.oh-my-pi.agents.<name> must set exactly one mode: `source`, `text`, or generated fields.";
                 }
