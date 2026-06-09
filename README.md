@@ -57,10 +57,9 @@ Home Manager module example:
         extraDesc = "Additional behavior details shown below the frontmatter line.";
         tools = [ "read" "search" "find" "web_search" ];
         model = "pi/smol";
-        thinkingLevel = "med";
-        prompt = ''
-          You are my custom agent.
-        '';
+        spawns = [ "task" ];
+        thinkingLevel = "medium";
+        blocking = true;
       };
     };
   };
@@ -77,16 +76,13 @@ Available Home Manager options:
   - Generated markdown mode (set these instead of `source`/`text`):
     - `<name>.name` (required): Frontmatter `name`.
     - `<name>.description` (required): Frontmatter `description`.
-    - `<name>.extraDesc`: Extra text written below the frontmatter `---` line (before `prompt`).
+    - `<name>.extraDesc`: Extra text written below the frontmatter `---` line.
     - `<name>.tools`: Frontmatter `tools`.
     - `<name>.spawns`: Frontmatter `spawns`.
     - `<name>.model`: Frontmatter `model`.
-    - `<name>.thinkingLevel`: Frontmatter `thinking-level`.
+    - `<name>.thinkingLevel`: Frontmatter `thinkingLevel` (`low`, `medium`, or `high`).
     - `<name>.blocking`: Frontmatter `blocking`.
-    - `<name>.autoloadSkills`: Frontmatter `autoloadSkills`.
-    - `<name>.readSummarize`: Frontmatter `read-summarize`.
     - `<name>.output`: Frontmatter `output`.
-    - `<name>.prompt`: Body text written after frontmatter.
   - `<name>.executable`: Marks the installed file as executable (default: `false`).
   - Exactly one mode must be used: `<name>.source`, `<name>.text`, or generated fields.
 

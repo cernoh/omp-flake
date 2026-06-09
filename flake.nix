@@ -114,10 +114,7 @@
               || agentCfg.model != null
               || agentCfg.thinkingLevel != null
               || agentCfg.blocking != null
-              || agentCfg.autoloadSkills != null
-              || agentCfg.readSummarize != null
-              || agentCfg.output != null
-              || agentCfg.prompt != null;
+              || agentCfg.output != null;
             renderGeneratedAgent = agentCfg:
               let
                 frontmatter =
@@ -128,12 +125,10 @@
                   ++ lib.optional (agentCfg.tools != null) (renderAgentField "tools" agentCfg.tools)
                   ++ lib.optional (agentCfg.spawns != null) (renderAgentField "spawns" agentCfg.spawns)
                   ++ lib.optional (agentCfg.model != null) (renderAgentField "model" agentCfg.model)
-                  ++ lib.optional (agentCfg.thinkingLevel != null) (renderAgentField "thinking-level" agentCfg.thinkingLevel)
+                  ++ lib.optional (agentCfg.thinkingLevel != null) (renderAgentField "thinkingLevel" agentCfg.thinkingLevel)
                   ++ lib.optional (agentCfg.blocking != null) (renderAgentField "blocking" agentCfg.blocking)
-                  ++ lib.optional (agentCfg.autoloadSkills != null) (renderAgentField "autoloadSkills" agentCfg.autoloadSkills)
-                  ++ lib.optional (agentCfg.readSummarize != null) (renderAgentField "read-summarize" agentCfg.readSummarize)
                   ++ lib.optional (agentCfg.output != null) (renderAgentField "output" agentCfg.output);
-                bodySections = lib.filter (section: section != null && section != "") [ agentCfg.extraDesc agentCfg.prompt ];
+                bodySections = lib.filter (section: section != null && section != "") [ agentCfg.extraDesc ];
               in
               ''
                 ---
@@ -203,34 +198,19 @@
                       description = "Generated agent frontmatter `model` field.";
                     };
                     thinkingLevel = lib.mkOption {
-                      type = lib.types.nullOr lib.types.str;
+                      type = lib.types.nullOr (lib.types.enum [ "low" "medium" "high" ]);
                       default = null;
-                      description = "Generated agent frontmatter `thinking-level` field.";
+                      description = "Generated agent frontmatter `thinkingLevel` field.";
                     };
                     blocking = lib.mkOption {
                       type = lib.types.nullOr lib.types.bool;
                       default = null;
                       description = "Generated agent frontmatter `blocking` field.";
                     };
-                    autoloadSkills = lib.mkOption {
-                      type = lib.types.nullOr (lib.types.either lib.types.str (lib.types.listOf lib.types.str));
-                      default = null;
-                      description = "Generated agent frontmatter `autoloadSkills` field.";
-                    };
-                    readSummarize = lib.mkOption {
-                      type = lib.types.nullOr lib.types.bool;
-                      default = null;
-                      description = "Generated agent frontmatter `read-summarize` field.";
-                    };
                     output = lib.mkOption {
-                      type = lib.types.nullOr lib.types.attrs;
+                      type = lib.types.nullOr lib.types.anything;
                       default = null;
                       description = "Generated agent frontmatter `output` field.";
-                    };
-                    prompt = lib.mkOption {
-                      type = lib.types.nullOr lib.types.lines;
-                      default = null;
-                      description = "Prompt body written after generated frontmatter.";
                     };
                     executable = lib.mkOption {
                       type = lib.types.bool;
