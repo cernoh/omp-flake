@@ -54,7 +54,7 @@ Home Manager module example:
       "my-agent.md" = {
         name = "my-agent";
         description = "My custom agent";
-        extraDesc = "Additional behavior details shown with the description.";
+        extraDesc = "Additional behavior details shown below the frontmatter line.";
         tools = [ "read" "search" "find" "web_search" ];
         model = "pi/smol";
         thinkingLevel = "med";

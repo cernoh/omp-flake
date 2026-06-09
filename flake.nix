@@ -185,7 +185,7 @@
                     extraDesc = lib.mkOption {
                       type = lib.types.nullOr lib.types.lines;
                       default = null;
-                      description = "Additional text appended to `description` in generated frontmatter.";
+                      description = "Additional text rendered below the generated frontmatter `---` line.";
                     };
                     tools = lib.mkOption {
                       type = lib.types.nullOr (lib.types.either lib.types.str (lib.types.listOf lib.types.str));
