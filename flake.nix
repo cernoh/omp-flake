@@ -173,7 +173,7 @@
                       description = "Generated agent frontmatter `name` field.";
                     };
                     description = lib.mkOption {
-                      type = lib.types.nullOr lib.types.lines;
+                      type = lib.types.nullOr lib.types.str;
                       default = null;
                       description = "Generated agent frontmatter `description` field.";
                     };
@@ -193,7 +193,7 @@
                       description = "Generated agent frontmatter `spawns` field.";
                     };
                     model = lib.mkOption {
-                      type = lib.types.nullOr (lib.types.either lib.types.str (lib.types.listOf lib.types.str));
+                      type = lib.types.nullOr lib.types.str;
                       default = null;
                       description = "Generated agent frontmatter `model` field.";
                     };
