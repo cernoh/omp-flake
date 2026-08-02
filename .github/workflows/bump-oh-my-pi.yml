@@ -1,0 +1,118 @@
+name: Bump Oh My Pi
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v19
+
+      - name: Update flake.nix to latest release
+        run: |
+          set -euo pipefail
+
+          latest_tag="$(curl -fsSL -H 'Accept: application/vnd.github+json' https://api.github.com/repos/can1357/oh-my-pi/releases/latest | jq -r '.tag_name')"
+          if [ -z "$latest_tag" ] || [ "$latest_tag" = "null" ]; then
+            echo "Unable to determine latest release tag"
+            exit 1
+          fi
+
+          latest_version="${latest_tag#v}"
+          current_version="$(grep -m1 'version = "' flake.nix | sed -E 's/.*"([^"]+)".*/\1/')"
+
+          if [ "$latest_version" = "$current_version" ]; then
+            echo "Already on latest version: $current_version"
+            exit 0
+          fi
+
+          declare -A assets=(
+            [x86_64-linux]="omp-linux-x64"
+            [aarch64-linux]="omp-linux-arm64"
+            [x86_64-darwin]="omp-darwin-x64"
+            [aarch64-darwin]="omp-darwin-arm64"
+          )
+
+          tmp_dir="$(mktemp -d)"
+          trap 'rm -rf "$tmp_dir"' EXIT
+          sources_file="$tmp_dir/sources.tsv"
+          : > "$sources_file"
+
+          systems=(x86_64-linux aarch64-linux x86_64-darwin aarch64-darwin)
+          for system in "${systems[@]}"; do
+            asset="${assets[$system]}"
+            target="$tmp_dir/$asset"
+            url="https://github.com/can1357/oh-my-pi/releases/download/$latest_tag/$asset"
+
+            curl -fL "$url" -o "$target"
+            hash="$(nix hash file "$target")"
+
+            printf '%s\t%s\t%s\n' "$system" "$url" "$hash" >> "$sources_file"
+          done
+
+          export latest_version
+          export sources_file
+          python <<'PY'
+import os
+import re
+from pathlib import Path
+
+flake_path = Path("flake.nix")
+text = flake_path.read_text()
+
+latest_version = os.environ["latest_version"]
+text, count = re.subn(r'version = "[^"]+";', f'version = "{latest_version}";', text, count=1)
+if count != 1:
+    raise SystemExit("Failed to update version")
+
+sources = {}
+for line in Path(os.environ["sources_file"]).read_text().splitlines():
+    system, url, sha = line.split("\t")
+    sources[system] = (url, sha)
+
+for system in ["x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"]:
+    url, sha = sources[system]
+    pattern = rf'("{re.escape(system)}"\s*=\s*\{{\s*url\s*=\s*")[^"]+(";\s*sha256\s*=\s*")[^"]+(";\s*\}};)'
+    replacement = rf'\1{url}\2{sha}\3'
+    text, count = re.subn(pattern, replacement, text, flags=re.S)
+    if count != 1:
+        raise SystemExit(f"Failed to update source block for {system}")
+
+flake_path.write_text(text)
+PY
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if git diff --quiet -- flake.nix; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "version=$(grep -m1 'version = "' flake.nix | sed -E 's/.*"([^"]+)".*/\1/')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/bump-oh-my-pi
+          delete-branch: true
+          commit-message: "chore: bump oh-my-pi to v${{ steps.changes.outputs.version }}"
+          title: "chore: bump oh-my-pi to v${{ steps.changes.outputs.version }}"
+          body: |
+            Automated bump of Oh My Pi binaries in `flake.nix`.
+
+            - Updates package version
+            - Updates release URLs for all supported platforms
+            - Refreshes sha256 hashes for all supported platforms
