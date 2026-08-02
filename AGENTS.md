@@ -21,6 +21,7 @@ Nix flake packaging for [Oh My Pi](https://github.com/can1357/oh-my-pi). Provide
 - `packages.<system>.default` — pre-built `omp` binary
 - `apps.<system>.default` — `nix run` wrapper
 - `homeManagerModules.default` — Home Manager `programs.oh-my-pi` option
+- `.github/workflows/bump-oh-my-pi.yml` — automated upstream release bump PR flow
 
 ### Change Rules
 
@@ -99,4 +100,4 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Child DOX Index
 
-No child AGENTS.md files. This project is a single-directory flake with one source file (`flake.nix`), its lock file, and a README. No subdirectories possess their own domain boundary, responsibilities, or rules that would warrant a child doc. If subdirectories are added later with distinct purpose or workflow, create a child AGENTS.md there and update this index.
+No child AGENTS.md files. This project is intentionally small (`flake.nix`, `flake.lock`, `README.md`, and workflow files under `.github/workflows`) and does not yet have subdirectories with distinct domain boundaries that warrant child AGENTS.md contracts. If a subdirectory gains its own durable purpose or workflow, add a child AGENTS.md there and update this index.
